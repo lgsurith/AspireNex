@@ -17,7 +17,7 @@ def detect_faces(frame, haar_cascade):
 
 def process_image(image_path, haar_cascade):
     img = cv.imread(image_path)
-    down_width, down_height = 1500 , 800
+    down_width, down_height = 1400 , 900
     resized_down = cv.resize(img, (down_width, down_height), interpolation=cv.INTER_LINEAR)
     
     result = detect_faces(resized_down, haar_cascade)
