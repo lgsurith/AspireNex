@@ -13,10 +13,11 @@ def detect_faces(frame, haar_cascade):
     
     return frame
 
-#functionality to process image
+#functionality to process image1
+
 def process_image(image_path, haar_cascade):
     img = cv.imread(image_path)
-    down_width, down_height = 900, 1200
+    down_width, down_height = 1500 , 800
     resized_down = cv.resize(img, (down_width, down_height), interpolation=cv.INTER_LINEAR)
     
     result = detect_faces(resized_down, haar_cascade)
@@ -42,9 +43,10 @@ def process_video(video_path, haar_cascade):
     vid_cap.release()
     cv.destroyAllWindows()
 
-#functionality to process webcam - make sure to add your video port properly to access webcam.
+#functionality to process webcam - make sure to add your video port properly to access webcam.3
+
 def process_webcam(haar_cascade):
-    vid_cap = cv.VideoCapture(2)
+    vid_cap = cv.VideoCapture(0)
     
     while True:
         success, frame = vid_cap.read()
@@ -73,7 +75,7 @@ def main():
         choice = input("Enter your choice (1-4): ")
         
         if choice == '1':
-            image_path = "Task-5=Face Recognition/face2.png"
+            image_path = "Task-5=Face Recognition/face.jpg"
             process_image(image_path, haar_cascade)
         elif choice == '2':
             video_path = "Task-5=Face Recognition/face.mp4"
