@@ -64,8 +64,9 @@ class MovieBot:
             "Silver Class" : 110
         }
         #making sure to have some history for in chat reference as well as some context for the model to interact.
-        self.context = {}
+        self.context = {}   #basically to store all the info about the ticket.
         self.chat_history = []
+        self.current_step = "greeting"
     
     def greet(self):
         return random.choice(self.greetings)
@@ -117,7 +118,35 @@ class MovieBot:
         #to make it more context aware and implementing conditional analysis.
         last_message = self.chat_history[-2] if len(self.chat_history) >= 2 else ""
 
-        if any(word in user_input for word in ["hello", "hi", "hey"]):
+        #setting up context for the greeting as well as natural repsonse in bopking a movie.
+        if self.current_step == "greeting":
+            greeting_keywords = ["hello" , "hi" , "hey" , "hola" ]
+            booking_greeting_keywords = ["hey" , "hi" , "i" , "want" , "book" , "movie" , "tickets" , "ticket"]
+            if any(keyword in user_input for keyword in greeting_keywords):
+                self.current_step = "greeting"
+                return f"{random.choice(self.greetings)}"
+            elif any(keyword in user_input for keyword in booking_greeting_keywords):
+                self.current_step = "genre_selection"
+                return "Great! I can help you book a movie. What genre are you interested in?"
+        
+        #to get the genre of the movie.
+        elif self.current_step == "genre_selection":
+            genre_keywords = ["genre" , "type of movies" , "type" , "genre of a movie"]
+            if any (keyword in user_input for keyword in genre_keywords):
+                movies = [movie for movie , movie_genre in self.movies.items() if any (genre.lower() in user_input for genre in movie_genre)]
+                if movies:
+                    self.context['movie'] = random.choice(movies)
+                    self.context['genre'] = next(genre for genre in self.movies[self.context['movie']] if genre.lower() in user_input)
+                    self.current_step = "movie_confirmation"
+                    return f"Aamzing choice! How about '{self.context['movie']}'? Would you like to book this movie or see more {self.context['genre']}  movie options?"
+        
+
+                          
+
+
+
+
+        if any(word in user_input for word in ["hello", "hi", "hey"]): 
             return f"{random.choice(self.greetings)}"
 
         elif "book" in user_input and "movie" in user_input and "ticket" in user_input:
