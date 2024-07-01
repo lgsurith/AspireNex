@@ -1,8 +1,7 @@
 import random
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
-#Bot For Movie Booking
 class MovieBot:
     def __init__(self):
         self.movies = {
@@ -31,12 +30,11 @@ class MovieBot:
             "Alamo Drafthouse" , 
             "Cine De Chef"
         ]
-        self.showtimes = ["10:00 AM , 12:10 AM , 2:30 PM", "5:20 PM", "8:40 PM","10:30 PM"]
-        # self.booking = {}
+        self.showtimes = ["10:00 AM", "12:10 PM", "2:30 PM", "5:20 PM", "8:40 PM", "10:30 PM"]
         self.greetings = [
-            "Hello , Welcome to MovieBot!. How can I help you ?",
-            "Hey There! , How can I help you today?",
-            "Hello Movie Buff ! Whats on your mind today ?"
+            "Hello, Welcome to MovieBot! How can I help you?",
+            "Hey there! How can I help you today?",
+            "Hello movie buff! What's on your mind today?"
         ]
         self.farewells = [
             "Goodbye!", 
@@ -50,40 +48,36 @@ class MovieBot:
             "Soda" : 100, 
             "Nachos with Salsa" : 220, 
             "Hot Dog" : 140 ,
-            "Sandwhich" : 110 , 
+            "Sandwich" : 110 , 
             "Cold Coffee" : 100
         }
         self.snacks_combos = {
-            "Lone Ranger ": {"items" : ["Medium Popcorn", "Soda"] , "price" : 490}, 
-            "Family Pack ": {"items" : ["Large Popcorns" , " Large Popcorns" , "Soda" , "Soda" , "Soda"],"price" : 720},
-            "Unlimited Combo" : {"items" : ["Large Popcorn (Refillable)" , "Large Soda (Refillable)"] , "price" : 610}
+            "Lone Ranger": {"items" : ["Medium Popcorn", "Soda"] , "price" : 490}, 
+            "Family Pack": {"items" : ["Large Popcorn", "Large Popcorn", "Soda", "Soda", "Soda"], "price" : 720},
+            "Unlimited Combo": {"items" : ["Large Popcorn (Refillable)", "Large Soda (Refillable)"], "price" : 610}
         }
         self.ticket_price = {
-            "Balcony" : 210 , 
-            "Gold Class" : 145 , 
-            "Silver Class" : 110
+            "Balcony": 210 , 
+            "Gold Class": 145 , 
+            "Silver Class": 110
         }
-        #making sure to have some history for in chat reference as well as some context for the model to interact.
-        self.context = {}   #basically to store all the info about the ticket.
+        self.context = {}
         self.chat_history = []
         self.current_step = "greeting"
-    
+
     def greet(self):
         return random.choice(self.greetings)
 
     def farewell(self):
         return random.choice(self.farewells)
-    
-    #to get more movies based on the given genre.
+
     def get_movies_by_genre(self, genre):
         return [movie for movie, genres in self.movies.items() if genre in genres]
 
-    #functionality for weekend 
     def is_weekend(self, date_str):
         date = datetime.strptime(date_str, "%d/%m/%Y")
         return date.weekday() >= 5
-    
-    #to sum up all the prices.
+
     def calculate_total(self):
         total = self.ticket_price[self.context['ticket_type']] * self.context['tickets']
         if 'snacks' in self.context:
@@ -91,161 +85,140 @@ class MovieBot:
         if 'combos' in self.context:
             total += sum(self.snacks_combos[combo]['price'] for combo in self.context['combos'])
         return total
-    
-    #to generate the ticket with all the details.
+
     def generate_ticket(self):
         total = self.calculate_total()
         ticket = f"Movie: {self.context['movie']}\n"
         ticket += f"Theater: {self.context['theater']}\n"
         ticket += f"Date: {self.context['date']}\n"
         ticket += f"Showtime: {self.context['showtime']}\n"
-        ticket += f"Ticket Details : {self.context['tickets']} {self.context['ticket_type']} (₹{self.ticket_price[self.context['ticket_type']] * self.context['tickets']})\n"
-        if 'snacks' in self.context:
+        ticket += f"Ticket Details: {self.context['tickets']} {self.context['ticket_type']} (₹{self.ticket_price[self.context['ticket_type']] * self.context['tickets']})\n"
+        
+        if 'snacks' in self.context and self.context['snacks']:
             ticket += "Snacks:\n"
             for snack in self.context['snacks']:
                 ticket += f"  - {snack} (₹{self.snacks[snack]})\n"
-        if 'combos' in self.context:
+    
+        if 'combos' in self.context and self.context['combos']:
             ticket += "Combos:\n"
             for combo in self.context['combos']:
                 ticket += f"  - {combo} (₹{self.snacks_combos[combo]['price']})\n"
+        
         ticket += f"Total: ₹{total}"
         return ticket
-    
-    #to get the response from the user input.
+
     def get_response(self, user_input):
         user_input = user_input.lower()
         self.chat_history.append(user_input)
-        #to make it more context aware and implementing conditional analysis.
         last_message = self.chat_history[-2] if len(self.chat_history) >= 2 else ""
 
-        #setting up context for the greeting as well as natural repsonse in bopking a movie.
         if self.current_step == "greeting":
-            greeting_keywords = ["hello" , "hi" , "hey" , "hola" ]
-            booking_greeting_keywords = ["hey" , "hi" , "i" , "want" , "book" , "movie" , "tickets" , "ticket"]
-            if any(keyword in user_input for keyword in greeting_keywords):
-                self.current_step = "greeting"
-                return f"{random.choice(self.greetings)}"
-            elif any(keyword in user_input for keyword in booking_greeting_keywords):
+            if any(keyword in user_input for keyword in ["hello", "hi", "hey", "hola"]):
+                return self.greet()
+            elif any(keyword in user_input for keyword in ["book", "movie", "ticket"]):
                 self.current_step = "genre_selection"
-                return "Great! I can help you book a movie. What genre are you interested in?"
-        
-        #to get the genre of the movie.
+                genre_list = ", ".join(set([genre for movie_genres in self.movies.values() for genre in movie_genres]))
+                return f"Sure! What genre are you in the mood for? We have: {genre_list}"
+
         elif self.current_step == "genre_selection":
-            genre_keywords = ["genre" , "type of movies" , "type" , "genre of a movie"]
-            if any (keyword in user_input for keyword in genre_keywords):
-                movies = [movie for movie , movie_genre in self.movies.items() if any (genre.lower() in user_input for genre in movie_genre)]
+            genres = set([genre.lower() for movie_genres in self.movies.values() for genre in movie_genres])
+            matched_genres = [genre for genre in genres if genre in user_input]
+            if matched_genres:
+                self.context['genre'] = matched_genres[0]
+                movies = self.get_movies_by_genre(self.context['genre'].capitalize())
                 if movies:
                     self.context['movie'] = random.choice(movies)
-                    self.context['genre'] = next(genre for genre in self.movies[self.context['movie']] if genre.lower() in user_input)
                     self.current_step = "movie_confirmation"
-                    return f"Aamzing choice! How about '{self.context['movie']}'? Would you like to book this movie or see more {self.context['genre']}  movie options?"
+                    return f"How about '{self.context['movie']}'? Would you like to book this movie or see more {self.context['genre'].capitalize()} movie options?"
+            else:
+                return "I'm sorry, I didn't get that. Please choose a genre from the list."
         
+        elif self.current_step == "movie_confirmation":
+            if "yes" in user_input:
+                self.current_step = "theater_selection"
+                return f"Excellent! Which theater would you prefer? We have: {', '.join(self.theaters)}"
+            elif any(keyword in user_input for keyword in ["no", "show", "more", "other"]):
+                genre_movies = self.get_movies_by_genre(self.context['genre'])
+                genre_movies.remove(self.context['movie'])
+                if genre_movies:
+                    movies_list = ", ".join(genre_movies)
+                    return f"Here are some other {self.context['genre']} movies: {movies_list}. Would you like to book any of these?"
 
-                          
+        elif self.current_step == "theater_selection":
+            for theater in self.theaters:
+                if theater.lower() in user_input:
+                    self.context['theater'] = theater
+                    self.current_step = "date_selection"
+                    return f"Good choice! What date would you like to watch the movie? (Please use DD/MM/YYYY format)"
 
+        elif self.current_step == "date_selection":
+            if re.match(r'\d{2}/\d{2}/\d{4}', user_input):
+                self.context['date'] = user_input
+                self.current_step = "showtime_selection"
+                return f"Alright! Here are the available showtimes: {', '.join(self.showtimes)}. Which one do you prefer?"
 
+        elif self.current_step == "showtime_selection":
+            for showtime in self.showtimes:
+                if showtime.lower() in user_input:
+                    self.context['showtime'] = showtime
+                    self.current_step = "ticket_selection"
+                    return "Great! How many tickets would you like to book?"
 
+        elif self.current_step == "ticket_selection":
+            if user_input.isdigit():
+                self.context['tickets'] = int(user_input)
+                ticket_types = ", ".join([f"{ttype} (₹{price})" for ttype, price in self.ticket_price.items()])
+                self.current_step = "ticket_type_selection"
+                return f"Perfect! I've booked {self.context['tickets']} tickets. Please choose your ticket type: {ticket_types}"
 
-        if any(word in user_input for word in ["hello", "hi", "hey"]): 
-            return f"{random.choice(self.greetings)}"
+        elif self.current_step == "ticket_type_selection":
+            for ticket_type in self.ticket_price:
+                if ticket_type.lower() in user_input:
+                    self.context['ticket_type'] = ticket_type
+                    self.current_step = "snack_selection"
+                    return f"Got it! You've booked {self.context['tickets']} tickets in the {self.context['ticket_type']} section. Would you like to order snacks?"
 
-        elif "book" in user_input and "movie" in user_input and "ticket" in user_input:
-            return "Great! I can help you book a movie. What genre are you interested in?"
+        elif self.current_step == "snack_selection":
+            if "no" in user_input:
+                self.current_step = "finalize_order"
+                return "Would you like to order anything else? Or proceed to checkout and view your ticket?"
 
-        elif "genre" in user_input or "type of movie" in user_input:
-            genres = set(genre for movie_genres in self.movies.values() for genre in movie_genres)
-            return f"We have movies in the following genres: {', '.join(genres)}. Which genre would you like?"
-        
-        elif "snack" in user_input or "snacks" in user_input or "food" in user_input:
             snack_list = ", ".join([f"{snack} (₹{price})" for snack, price in self.snacks.items()])
             combo_list = ", ".join([f"{combo} (₹{details['price']})" for combo, details in self.snacks_combos.items()])
-            return f"We have the following snacks: {snack_list}. We also have the following combos: {combo_list}. Would you like to order anything?"
-        
-        elif any(snack.lower() in user_input for snack in self.snacks):
-            ordered_snack = next(snack for snack in self.snacks if snack.lower() in user_input)
+
             if 'snacks' not in self.context:
                 self.context['snacks'] = []
-            self.context['snacks'].append(ordered_snack)
-            return f"Great! I've added '{ordered_snack}' to your order. Would you like to order anything else?"
+            if 'combos' not in self.context:
+                self.context['combos'] = []
 
-        elif any(combo.lower() in user_input for combo in self.snacks_combos):
-            ordered_combo = next(combo for combo in self.snacks_combos if combo.lower() in user_input)
-            if self.is_weekend(self.context['date']) or "Unlimited Combo" in ordered_combo:
-                if 'combos' not in self.context:
-                    self.context['combos'] = []
-                self.context['combos'].append(ordered_combo)
-                return f"Great! I've added the '{ordered_combo}' to your order. Would you like to order anything else?"
-            else:
-                return "I'm sorry, the 'Unlimited Combo' is only available on weekends. Would you like to order something else?"
-        
-        # elif any(genre.lower() in user_input for genre in set(genre for movie_genres in self.movies.values() for genre in movie_genres)):
-        #     matching_movies = [movie for movie, genres in self.movies.items() if any(genre.lower() in user_input for genre in genres)]
-        #     if matching_movies:
-        #         self.context['movie'] = random.choice(matching_movies)
-        #         return f"Great choice! How about '{self.context['movie']}'? Would you like to book this movie?"
+            for snack in self.snacks:
+                if snack.lower() in user_input:
+                    self.context['snacks'].append(snack)
+                    return f"Great! I've added '{snack}' to your order. Would you like to order anything else?"
 
-        elif any(genre.lower() in user_input for genre in set(genre for movie_genres in self.movies.values() for genre in movie_genres)):
-            matching_movies = [movie for movie , genres in self.movies.items() if any(genre.lower() in user_input for genre in genres)]    
-            if matching_movies:
-                self.context['movie'] = random.choice(matching_movies)
-                selected_genre = next(genre for genre in self.movies[self.context['movie']] if genre.lower() in user_input)
-                self.context['genre'] = selected_genre
-                return f"Great choice! How about '{self.context['movie']}'? It's a fantastic {selected_genre} film! Would you like to book this movie or see more {selected_genre} options?"
-
-        elif "show me more" in user_input and "movies" in user_input and "genre" in user_input and "any other" in user_input:
-            genre = self.context.get('genre')
-            if genre:
-                genre_movies = self.get_movies_by_genre(genre)
-                if genre_movies:
-                    genre_movies.remove(self.context['movie'])
-                    if genre_movies:
-                        movie_list = ", ".join(genre_movies)
-                        return f"Here are some other {genre} movies: {movie_list}. Would you like to book any of these?"
+            for combo in self.snacks_combos:
+                if combo.lower() in user_input:
+                    if self.is_weekend(self.context['date']) or "unlimited combo" in combo.lower():
+                        self.context['combos'].append(combo)
+                        return f"Excellent! I've added the {combo} to your order. Would you like to order anything else?"
                     else:
-                        return f"I'm sorry, there are no other {genre} movies. Would you like to book this movie instead?"
-                
+                        return "I'm sorry, the 'Unlimited Combo' is only available on weekends. Would you like to order something else?"
+            return f"We have the following snacks: {snack_list}. We also have the following combos: {combo_list}. What would you like to order?"
 
-        elif "yes" in user_input and 'movie' in self.context:
-            return f"Excellent! Which theater would you prefer? We have: {', '.join(self.theaters)}"
-        
-        elif "yes" in user_input  and 'order' in last_message:
-            return "What can i get for you ?"
-        
-        elif "yes" in  user_input and 'snack' in last_message:
-            return "Which snack would you like to order?"
-        
-        elif "yes" in user_input and 'combo' in last_message:
-            return "Which combo would you like to order?"
+        elif self.current_step == "finalize_order":
+            if any(keyword in user_input for keyword in ["yes", "checkout", "view ticket"]):
+                self.current_step = "ticket_generation"
+                return "Great! Your ticket is ready. Would you like to view it?"
+            elif "no" in user_input:
+                return "Is there anything else I can help you with?"
 
-        elif any(theater.lower() in user_input for theater in self.theaters):
-            self.context['theater'] = next(theater for theater in self.theaters if theater.lower() in user_input)
-            return f"Good choice! What date would you like to watch the movie? (Please use DD/MM/YYYY format)"
+        elif self.current_step == "ticket_generation":
+            if "yes" in user_input:
+                return self.generate_ticket()
+            elif "no" in user_input:
+                return "Is there anything else I can help you with?"
 
-        elif re.match(r'\d{2}/\d{2}/\d{4}', user_input):
-            self.context['date'] = user_input
-            return f"Alright! Here are the available showtimes: {', '.join(self.showtimes)}. Which one do you prefer?"
-
-        elif any(showtime.lower() in user_input for showtime in self.showtimes):
-            self.context['showtime'] = next(showtime for showtime in self.showtimes if showtime.lower() in user_input)
-            return "Great! How many tickets would you like to book?"
-
-        elif user_input.isdigit():
-            self.context['tickets'] = int(user_input)
-            ticket_type = ", ".join([f"{ticket_type} (₹{price})" for ticket_type, price in self.ticket_price.items()])
-            return f"Perfect! I've booked {self.context['tickets']} tickets. Please choose your ticket type: {ticket_type}"
-        
-        elif any(ticket_type.lower() in user_input for ticket_type in self.ticket_price):
-            self.context['ticket_type'] = next(ticket_type for ticket_type in self.ticket_price if ticket_type.lower() in user_input)
-            return f"Got it! You've booked {self.context['tickets']} tickets in the {self.context['ticket_type']} section. Would you like to order snacks?"
-
-        elif "thank" in user_input or "thank you" in user_input:
-            return self.farewell()
-        
-        elif "ticket" in user_input:
-            return self.generate_ticket()
-
-        else:
-            return "I'm sorry, I didn't understand that. Could you please rephrase or ask something else?"
+        return "I'm sorry, I didn't understand that. Could you please repeat?"
 
 def chat_with_bot():
     bot = MovieBot()
