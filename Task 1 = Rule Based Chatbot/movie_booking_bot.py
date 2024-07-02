@@ -63,7 +63,7 @@ class MovieBot:
         }
         self.context = {}
         self.chat_history = []
-        self.current_step = "greeting"
+        self.current_step = "greeting"  #initialising the step for the instate conversation.
 
     def greet(self):
         return random.choice(self.greetings)
@@ -77,7 +77,7 @@ class MovieBot:
     def is_weekend(self, date_str):
         date = datetime.strptime(date_str, "%d/%m/%Y")
         return date.weekday() >= 5
-
+    
     def calculate_total(self):
         total = self.ticket_price[self.context['ticket_type']] * self.context['tickets']
         if 'snacks' in self.context:
@@ -115,7 +115,7 @@ class MovieBot:
         if self.current_step == "greeting":
             if any(keyword in user_input for keyword in ["hello", "hi", "hey", "hola"]):
                 return self.greet()
-            elif any(keyword in user_input for keyword in ["book", "movie", "ticket"]):
+            elif any(keyword in user_input for keyword in ["book", "movie", "ticket" , "film"]):
                 self.current_step = "genre_selection"
                 genre_list = ", ".join(set([genre for movie_genres in self.movies.values() for genre in movie_genres]))
                 return f"Sure! What genre are you in the mood for? We have: {genre_list}"
@@ -124,8 +124,8 @@ class MovieBot:
             genres = set([genre.lower() for movie_genres in self.movies.values() for genre in movie_genres])
             matched_genres = [genre for genre in genres if genre in user_input]
             if matched_genres:
-                self.context['genre'] = matched_genres[0]
-                movies = self.get_movies_by_genre(self.context['genre'].capitalize())
+                self.context['genre'] = matched_genres[0].capitalize()
+                movies = self.get_movies_by_genre(self.context['genre'])
                 if movies:
                     self.context['movie'] = random.choice(movies)
                     self.current_step = "movie_confirmation"
@@ -139,10 +139,17 @@ class MovieBot:
                 return f"Excellent! Which theater would you prefer? We have: {', '.join(self.theaters)}"
             elif any(keyword in user_input for keyword in ["no", "show", "more", "other"]):
                 genre_movies = self.get_movies_by_genre(self.context['genre'])
-                genre_movies.remove(self.context['movie'])
+                genre_movies.remove(self.context['movie'])  #to show unique movies other than the previous selected ones.
                 if genre_movies:
+                    self.context['suggested_movies'] = genre_movies
                     movies_list = ", ".join(genre_movies)
                     return f"Here are some other {self.context['genre']} movies: {movies_list}. Would you like to book any of these?"
+            else:
+                for movie in self.context.get('suggested_movies' ,[]):
+                    if movie.lower() in user_input.lower():
+                        self.context['movie'] = movie
+                        self.current_step = "theater_selection"
+                        return f"Great choice! You have selected this {movie} . Which theater would you prefer? We have: {', '.join(self.theaters)}"
 
         elif self.current_step == "theater_selection":
             for theater in self.theaters:
@@ -226,7 +233,7 @@ def chat_with_bot():
 
     while True:
         user_input = input("You: ")
-        if user_input.lower() in ['quit', 'exit', 'bye']:
+        if user_input.lower() in ['quit', 'exit', 'bye' , 'thanks' , 'bye' , 'thank you']:
             print("Bot:", bot.farewell())
             break
         response = bot.get_response(user_input)
