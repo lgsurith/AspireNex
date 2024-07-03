@@ -291,40 +291,38 @@ class MovieBot:
 
         return "I'm sorry, I didn't understand that. Could you please repeat?"
 
-# def chat_with_bot():
-#     bot = MovieBot()
-#     print(bot.greet())
-
-#     while True:
-#         user_input = input("You: ")
-#         if user_input.lower() in ['quit', 'exit', 'bye' , 'thanks' , 'bye' , 'thank you']:
-#             print("Bot:", bot.farewell())
-#             break
-#         response = bot.get_response(user_input)
-#         print("Bot:", response)
-
-# if __name__ == "__main__":
-#     chat_with_bot()
-
-
+USER_AVATAR = "👤"
+BOT_AVATAR = "🎥"
 def main():
     st.title("Movie Booking Bot")
-    bot = MovieBot()
-    st.write(bot.greet())
 
-    if 'current_step' not in st.session_state:
-        st.session_state.current_step = "greeting"
+    if 'movie_bot' not in st.session_state:
+        st.session_state.movie_bot = MovieBot()
     
-    user_input = st.text_input("User:")
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+        bot_greeting = st.session_state.movie_bot.greet()
+        st.session_state.messages.append({"role" : "assistant" , "content" : bot_greeting})
+    
+    for message in st.session_state.messages:
+        with st.chat_message(message['role'] ,avatar=BOT_AVATAR if message['role'] == "assistant" else USER_AVATAR):
+            st.markdown(message['content'])
+    
+    if prompt := st.chat_input("What would you like to do today?"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user",avatar=USER_AVATAR):
+            st.markdown(prompt)
 
-    if user_input:
-        response = bot.get_response(user_input)
-        st.write("MovieBot:", response)
+        response = st.session_state.movie_bot.get_response(prompt)
+        with st.chat_message("assistant",avatar=BOT_AVATAR):
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
-    st.session_state.current_step = bot.current_step
 
-    if bot.current_step == "ticket_generation":
-        st.write(bot.generate_ticket())
+    if st.session_state.movie_bot.current_step == "ticket_generation":
+        ticket = st.session_state.movie_bot.generate_ticket()
+        st.markdown("## Your Ticket")
+        st.code(ticket, language="text")
 
 if __name__ == "__main__":
     main()
