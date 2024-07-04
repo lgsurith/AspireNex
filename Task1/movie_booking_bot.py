@@ -197,21 +197,23 @@ class MovieBot:
         elif self.current_step == "movie_confirmation":
             if "yes" in user_input.lower():
                 self.current_step = "theater_selection"
-                return f"Excellent! Which theater would you prefer? We have: {', '.join(self.theaters)}"
+                theatre_list = '\n• '.join(self.theaters)
+                return f"Excellent! Which theater would you prefer? We have:\n\n• {theatre_list}"
             elif any(keyword in user_input for keyword in ["no", "show", "more", "other"]):
                 genre_movies = self.get_movies_by_genre(self.context['genre'])
                 genre_movies.remove(self.context['movie'])  #to show unique movies other than the previous selected ones.
                 if genre_movies:
                     self.context['suggested_movies'] = genre_movies
-                    movies_list = ", ".join(genre_movies)
-                    return f"Here are some other {self.context['genre']} movies: {movies_list}. Would you like to book any of these?"
+                    movies_list = '\n• '.join(genre_movies)
+                    return f"Here are some other {self.context['genre']} movies:\n\n• {movies_list}.\n\n Would you like to book any of these?"
             else:
                 user_input_lower = user_input.lower()
                 for movie in self.context.get('suggested_movies' ,[]):
                     if movie.lower() in user_input_lower:
                         self.context['movie'] = movie
                         self.current_step = "theater_selection"
-                        return f"Great choice! You have selected this {movie} . Which theater would you prefer? We have: {', '.join(self.theaters)}"
+                        theatre_list = '\n• '.join(self.theaters)
+                        return f"Great choice! You have selected this {movie} . Which theater would you prefer?\n\n  We have: {theatre_list}"
 
         elif self.current_step == "theater_selection":
             for theater in self.theaters:
@@ -224,7 +226,8 @@ class MovieBot:
             if re.match(r'\d{2}/\d{2}/\d{4}', user_input):
                 self.context['date'] = user_input
                 self.current_step = "showtime_selection"
-                return f"Alright! Here are the available showtimes: {', '.join(self.showtimes)}. Which one do you prefer?"
+                showtime_list = "\n• ".join(self.showtimes)
+                return f"Alright! Here are the available showtimes:\n\n {showtime_list}.\n\n Which one do you prefer?"
             else:
                 return "Please enter a valid date in the DD/MM/YYYY format."
 
@@ -239,9 +242,9 @@ class MovieBot:
         elif self.current_step == "ticket_selection":
             if user_input.isdigit():
                 self.context['tickets'] = int(user_input)
-                ticket_types = ", ".join([f"{ttype} (₹{price})" for ttype, price in self.ticket_price.items()])
+                ticket_types = "\n• ".join([f"{ttype} (₹{price})" for ttype, price in self.ticket_price.items()])
                 self.current_step = "ticket_type_selection"
-                return f"Perfect! I've booked {self.context['tickets']} tickets. Please choose your ticket type: {ticket_types}"
+                return f"Perfect! I've booked {self.context['tickets']} tickets. Please choose your ticket type:\n\n {ticket_types}"
             else:
                 return "Please Enter a valid number of tickets."
 
@@ -259,9 +262,9 @@ class MovieBot:
                 return "Alright, no snacks. Would you like to proceed to checkout and view your ticket?"
             
             if "yes" in user_input.lower() or "sure" in user_input.lower() :
-                snack_list = ", ".join([f"{snack} (₹{price})" for snack, price in self.snacks.items()])
-                combo_list = ", ".join([f"{combo} (₹{details['price']})" for combo, details in self.snacks_combos.items()])
-                return f"Sure! We have the following snacks: {snack_list}. We also have the following combos: {combo_list}. What would you like to order?"
+                snack_list = "\n• ".join([f"{snack} (₹{price})" for snack, price in self.snacks.items()])
+                combo_list = "\n• ".join([f"{combo} (₹{details['price']})" for combo, details in self.snacks_combos.items()])
+                return f"Sure! We have the following snacks: \n\n {snack_list}.\n\n\n We also have the following combos:\n\n {combo_list}.\n\n What would you like to order?"
 
             ordered_snacks = self.parse_snack_order(user_input)
             
