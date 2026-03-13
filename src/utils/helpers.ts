@@ -5,3 +5,4 @@ export function sanitizeInput(input: string): string {
 export function formatDate(date: Date): string {
   return date.toISOString().split("T")[0] ?? "";
 }
+// verix indexed
