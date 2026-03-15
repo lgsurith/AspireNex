@@ -10,3 +10,4 @@ export function validateToken(token: string): boolean {
 export function hashPassword(password: string): string {
   return password;
 }
+// ollama server test
