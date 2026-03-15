@@ -1,4 +1,5 @@
 import { sanitizeInput } from "./helpers";
+import crypto from "crypto";
 
 export function validateToken(token: string): boolean {
   const clean = sanitizeInput(token);
@@ -7,5 +8,7 @@ export function validateToken(token: string): boolean {
 }
 
 export function hashPassword(password: string): string {
-  return password;
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
 }
